@@ -174,7 +174,9 @@
     var res = VERIFY_RES[tag];
     if (!res) return Promise.resolve({ found: false, note: 'no readback res' });
     return gj(API + '/' + res + '/all?offset=0&limit=50').then(function (r) {
-      var found = r.status === 200 && (r.text.indexOf(MARK) >= 0 || r.text.indexOf('redteam-test-410') >= 0 || r.text.indexOf('RT410') >= 0);
+      var keys = [MARK, 'redteam-test-410', 'RT410'];
+      if (res === 'watched-exchanges') keys.push('watchedSince');
+      var found = r.status === 200 && keys.some(function (k) { return r.text.indexOf(k) >= 0; });
       var v = { res: res, status: r.status, found: found };
       if (found) {
         var idx = r.text.indexOf(MARK);
@@ -211,8 +213,15 @@
     });
     RESOURCES.forEach(function (res) {
       jobs.push(function () {
+        var name = res.replace(/\//g, '_') + '-all';
         return gj(API + '/' + res + '/all?offset=0&limit=1000').then(function (r) {
-          state.artifacts.push({ name: res.replace(/\//g, '_') + '-all', status: r.status, len: r.text.length, data: r.text });
+          state.artifacts.push({ name: name, status: r.status, len: r.text.length, data: r.text });
+          if (r.status >= 400 && r.status !== 401 && r.status !== 403) {
+            // query-параметры могли быть отвергнуты валидацией — голый URL
+            return gj(API + '/' + res + '/all').then(function (r2) {
+              state.artifacts.push({ name: name + '-bare', status: r2.status, len: r2.text.length, data: r2.text });
+            });
+          }
         });
       });
     });
