@@ -128,6 +128,7 @@
     if (method === 'PATCH') p = patchj(url, body);
     else p = pj(url, body);
     return p.then(function (r) {
+      rec.resp = String(r.text);
       rec.channels.fetch_json = { status: r.status, head: String(r.text).slice(0, 160) };
       return sleep(600);
     }).then(function () {
@@ -157,6 +158,7 @@
       return verifyMarker(tag).then(function (v) { rec.readback_final = v; });
     });
   }
+  function erIdKnown(wid, exId) { return wid != null && wid !== exId; }
   function flatten(o) {
     var out = {};
     Object.keys(o || {}).forEach(function (k) { out[k] = typeof o[k] === 'object' ? JSON.stringify(o[k]) : o[k]; });
@@ -280,8 +282,16 @@
             if (!hasCur) {
               state.writes.push({ tag: 'exchange', note: 'currency ids недоступны из /exchanges — create пропущен/усечён' });
             }
-            // 2b) watched: ссылаемся на свой новый exchange, иначе — на первый из списка
+            // 2b) watched: ссылаемся на СОЗДАННЫЙ САМИМИ exchange (не трогаем чужие)
             var wid = exId;
+            try {
+              var er = state.writes.filter(function (w) { return w.tag === 'exchange' && w.resp; }).pop();
+              if (er) {
+                var eo = JSON.parse(er.resp);
+                wid = eo.id != null ? eo.id : (eo.publicId != null ? eo.publicId : wid);
+              }
+            } catch (e) {}
+            if (!erIdKnown(wid, exId)) state.writes.push({ tag: 'watched', note: 'created-exchange id не найден в ответе create — используется id из листинга ' + wid });
             return writeProof('watched', 'PATCH', '/watched-exchanges/' + wid,
               { watchedSince: new Date().toISOString() },
               { watchedSince: new Date().toISOString() },
